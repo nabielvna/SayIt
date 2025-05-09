@@ -37,7 +37,7 @@ export interface MessageResponse {
 }
 
 export const fetchChatDetails = async (chatId: string, token: string): Promise<ChatResponse> => {
-  const response = await fetch(getApiUrl(`chat/${chatId}`), {
+  const response = await fetch(getApiUrl(`ai-chat/${chatId}`), {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -51,7 +51,7 @@ export const fetchChatDetails = async (chatId: string, token: string): Promise<C
 };
 
 export const createNewChat = async (title: string, token: string): Promise<ChatInfo> => {
-  const response = await fetch(getApiUrl('chat'), {
+  const response = await fetch(getApiUrl('ai-chat'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ export const createNewChat = async (title: string, token: string): Promise<ChatI
 };
 
 export const toggleChatStar = async (chatId: string, isStarred: boolean, token: string): Promise<ChatInfo> => {
-  const response = await fetch(getApiUrl(`chat/${chatId}`), {
+  const response = await fetch(getApiUrl(`ai-chat/${chatId}`), {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ export const toggleChatStar = async (chatId: string, isStarred: boolean, token: 
 };
 
 export const updateChatTitle = async (chatId: string, title: string, token: string): Promise<ChatInfo> => {
-  const response = await fetch(getApiUrl(`chat/${chatId}`), {
+  const response = await fetch(getApiUrl(`ai-chat/${chatId}`), {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ export const updateChatTitle = async (chatId: string, title: string, token: stri
 };
 
 export const sendMessage = async (chatId: string, content: string, token: string): Promise<MessageResponse> => {
-  const response = await fetch(getApiUrl(`chat/${chatId}/message`), {
+  const response = await fetch(getApiUrl(`ai-chat/${chatId}/message`), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -127,7 +127,7 @@ export const sendMessage = async (chatId: string, content: string, token: string
 };
 
 export const deleteChat = async (chatId: string, token: string): Promise<{ success: boolean; message: string }> => {
-  const response = await fetch(getApiUrl(`chat/${chatId}`), {
+  const response = await fetch(getApiUrl(`ai-chat/${chatId}`), {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,

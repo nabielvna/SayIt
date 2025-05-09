@@ -36,7 +36,7 @@ const handleResponse = async (response: Response) => {
 // Fetch all chats
 export const fetchChats = async (token: string): Promise<Chat[]> => {
   try {
-    const response = await fetch(getApiUrl(`chat`), {
+    const response = await fetch(getApiUrl(`ai-chat`), {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -58,7 +58,7 @@ export const toggleChatStar = async (
   token: string
 ): Promise<void> => {
   try {
-    const response = await fetch(getApiUrl(`chat/${chatId}`), {
+    const response = await fetch(getApiUrl(`ai-chat/${chatId}`), {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -80,7 +80,7 @@ export const deleteChat = async (
   token: string
 ): Promise<void> => {
   try {
-    const response = await fetch(getApiUrl(`chat/${chatId}`), {
+    const response = await fetch(getApiUrl(`ai-chat/${chatId}`), {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,

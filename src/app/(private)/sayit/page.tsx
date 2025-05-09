@@ -17,7 +17,7 @@ import {
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@clerk/nextjs";
-import { Chat, fetchChats, toggleChatStar, deleteChat, ApiError } from "@/services/chat.service";
+import { Chat, fetchChats, toggleChatStar, deleteChat, ApiError } from "@/services/ai-chat.service";
 import ConfirmationDialog from "@/components/confirmation-dialog";
 
 export default function ChatbotHistoryPage() {
