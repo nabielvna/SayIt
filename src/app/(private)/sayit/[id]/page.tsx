@@ -26,6 +26,10 @@ import {
   sendMessage,
   MessageResponse
 } from '@/services/message.service';
+import { deleteChat } from '@/services/ai-chat.service';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import ConfirmationDialog from '@/components/confirmation-dialog';
+import { IconTrash } from '@tabler/icons-react';
 
 export default function ChatPage() {
   const params = useParams();
@@ -151,15 +155,28 @@ export default function ChatPage() {
       }),
     };
 
-    // Update chat title if this is the first message and AI generated a title
     if (data.chatUpdated && data.newTitle) {
       setChatInfo(prev => ({ 
         ...prev, 
-        title: data.newTitle || prev.title // Gunakan judul lama jika newTitle undefined
+        title: data.newTitle || prev.title 
       }));
     }
 
     return { userMessage, aiMessage };
+  };
+
+  const handleDeleteChat = async (chatId: string) => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      await deleteChat(chatId, token);
+
+      router.push('/sayit/new-chat'); 
+
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+    }
   };
 
   // Send message
@@ -274,7 +291,7 @@ export default function ChatPage() {
               </div>
               <div>
                 <h1 className="font-medium text-zinc-900 text-sm md:text-base">{chatInfo.title}</h1>
-                <p className="text-xs text-zinc-500">{isNewChat ? 'New conversation' : chatInfo.date}</p>
+                <p className="text-xs text-zinc-500 hidden md:block">{isNewChat ? 'New conversation' : chatInfo.date}</p>
               </div>
             </div>
           </div>
@@ -282,20 +299,55 @@ export default function ChatPage() {
           <div className="flex items-center space-x-1">
             {!isNewChat && (
               <button 
-                className={`p-2 rounded-full ${chatInfo.starred ? 'text-amber-500' : 'text-zinc-500 hover:text-zinc-900'}`}
+                className={`hidden md:block p-2 rounded-full ${chatInfo.starred ? 'text-amber-500' : 'text-zinc-500 hover:text-zinc-900'}`}
                 onClick={handleToggleStar}
               >
                 <IconStar className="w-5 h-5" />
               </button>
             )}
             {!isNewChat && (
-              <button className="p-2 rounded-full text-zinc-500 hover:text-zinc-900">
-                <IconDotsVertical className="w-5 h-5" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                <button className="p-2 rounded-full text-zinc-500 hover:text-zinc-900">
+                  <IconDotsVertical className="w-5 h-5" />
+                  
+                </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem>
+                  <ConfirmationDialog
+                    trigger={
+                      <button 
+                        type="button"
+                        className="text-red-500 transition-colors flex gap-2 items-center justify-center"
+                      >
+                        <IconTrash className="w-4 h-4 text-red-500" />
+                        Delete
+                      </button>
+                    }
+                    title="Delete Chat"
+                    description={`Are you sure you want to delete "${chatInfo.title}"? This action cannot be undone.`}
+                    confirmText="Delete"
+                    confirmVariant="destructive"
+                    onConfirm={async () => {
+                      const token = await getToken();
+                      if (token) {
+                        handleDeleteChat(chatId);
+                      }
+                    }}
+                  />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className={`p-2 group hover:none ${chatInfo.starred ? 'text-amber-500' : 'text-zinc-500'} md:hidden`}
+                        onClick={handleToggleStar}>
+                    <IconStar className={`w-5 h-5 ${chatInfo.starred ? 'text-amber-500' : 'text-zinc-500'}`} />
+                    {chatInfo.starred ? 'Unstar' : 'Star'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
-            <Link href="/new-chat" className="mr-2 flex items-center gap-1 px-3 py-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white text-sm transition-colors shadow-sm whitespace-nowrap">
+            <Link href="/sayit/new-chat" className="mr-2 flex items-center gap-1 px-3 py-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white text-sm transition-colors shadow-sm whitespace-nowrap">
               <IconMessageCircle className="w-4 h-4" />
-              <span>New</span>
+              <span className='hidden md:block'>New</span>
             </Link>
           </div>
         </div>
