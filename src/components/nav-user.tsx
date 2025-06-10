@@ -5,8 +5,8 @@ import {
   IconCreditCard,
   IconDotsVertical,
   IconLogout,
-  IconNotification,
-  IconUserCircle,
+  // IconNotification,
+  // IconUserCircle,
 } from "@tabler/icons-react"
 
 import {
@@ -176,18 +176,18 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => router.push("/account")}>
+              {/* <DropdownMenuItem onClick={() => router.push("/account")}>
                 <IconUserCircle className="mr-2 size-4" />
                 Account
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
               <DropdownMenuItem onClick={() => router.push("/billing")}>
                 <IconCreditCard className="mr-2 size-4" />
                 Billing
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/notifications")}>
+              {/* <DropdownMenuItem onClick={() => router.push("/notifications")}>
                 <IconNotification className="mr-2 size-4" />
                 Notifications
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>

@@ -16,6 +16,13 @@ import {
   User as IconUser,
   Send as IconSend
 } from 'lucide-react';
+import { IconTrash } from '@tabler/icons-react';
+
+// --- INTEGRASI ZUSTAND ---
+// Impor store yang telah kita buat sebelumnya
+import { useTokenStore } from '@/stores/use-token-store';
+
+// Komponen dan Service
 import { Header } from '@/components/dynamic-header';
 import {
   Message,
@@ -24,12 +31,11 @@ import {
   createNewChat,
   toggleChatStar,
   sendMessage,
-  MessageResponse
+  MessageResponse // Pastikan tipe ini menyertakan newTokenBalance
 } from '@/services/message.service';
 import { deleteChat } from '@/services/ai-chat.service';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import ConfirmationDialog from '@/components/confirmation-dialog';
-import { IconTrash } from '@tabler/icons-react';
 
 export default function ChatPage() {
   const params = useParams();
@@ -38,6 +44,12 @@ export default function ChatPage() {
   
   const { userId, getToken, isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
+
+  // --- INTEGRASI ZUSTAND ---
+  // Ambil fungsi 'setTokenBalance' dari store global.
+  // Kita hanya butuh "penulis" ke papan pengumuman, bukan "pembaca".
+  const setTokenBalance = useTokenStore((state) => state.setTokenBalance);
+  
   const [chatInfo, setChatInfo] = useState<ChatInfo>({
     id: isNewChat ? '' : chatId,
     userId: '',
@@ -62,7 +74,7 @@ export default function ChatPage() {
     }
   }, [isLoaded, isSignedIn, router]);
 
-  // Fetch chat details on load (only if not new chat)
+  // Fetch chat details on load
   useEffect(() => {
     if (!userId || isNewChat) return;
 
@@ -73,7 +85,6 @@ export default function ChatPage() {
         
         const data = await fetchChatDetails(chatId, token);
         
-        // Format the chat info
         const chatData = {
           ...data.chat,
           date: data.chat.createdAt 
@@ -83,7 +94,6 @@ export default function ChatPage() {
         
         setChatInfo(chatData);
         
-        // Format messages with timestamps
         const formattedMessages = data.messages.map((msg: Message) => ({
           ...msg,
           timestamp: msg.createdAt 
@@ -115,8 +125,7 @@ export default function ChatPage() {
 
   // Toggle star status
   const handleToggleStar = async () => {
-    if (isNewChat) return; // Don't allow starring a new chat
-    
+    if (isNewChat) return;
     try {
       const token = await getToken();
       if (!token) return;
@@ -138,7 +147,6 @@ export default function ChatPage() {
 
   // Process received messages from API
   const processMessages = (data: MessageResponse): { userMessage: Message, aiMessage: Message } => {
-    // Format timestamps for both messages
     const userMessage = {
       ...data.userMessage,
       timestamp: new Date(data.userMessage.createdAt).toLocaleTimeString([], { 
@@ -169,11 +177,8 @@ export default function ChatPage() {
     try {
       const token = await getToken();
       if (!token) return;
-
       await deleteChat(chatId, token);
-
       router.push('/sayit/new-chat'); 
-
     } catch (error) {
       console.error("Error deleting chat:", error);
     }
@@ -184,7 +189,7 @@ export default function ChatPage() {
     if (inputMessage.trim() === '') return;
 
     const currentMessage = inputMessage;
-    setInputMessage(''); // Clear input immediately for better UX
+    setInputMessage('');
     
     try {
       const token = await getToken();
@@ -192,80 +197,52 @@ export default function ChatPage() {
       
       let currentChatId = chatInfo.id;
       
-      // If this is a new chat, create it first
+      // Temporary user message for optimistic UI
+      const tempUserMessage: Message = {
+        id: 'temp-id-' + Date.now(),
+        chatId: currentChatId || 'temp',
+        type: 'user',
+        content: currentMessage,
+        createdAt: new Date().toISOString(),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      
+      setMessages(prev => [...prev, tempUserMessage]);
+      setIsLoading(true);
+
       if (isNewChat) {
-        // Create a temporary user message object for UI display before API response
-        const tempUserMessage: Message = {
-          id: 'temp-id-' + Date.now(),
-          chatId: 'temp',
-          type: 'user',
-          content: currentMessage,
-          createdAt: new Date().toISOString(),
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        
-        // Add temporary user message to UI immediately
-        setMessages(prev => [...prev, tempUserMessage]);
-        
-        // Set loading state
-        setIsLoading(true);
-        
-        // Create new chat with a generic title (AI will update it)
         const newChat = await createNewChat('Percakapan Baru', token);
         currentChatId = newChat.id;
         
-        // Update chat info
         setChatInfo(prev => ({ 
           ...prev, 
           id: currentChatId,
-          title: 'Percakapan Baru' // Will be updated by AI
+          title: 'Percakapan Baru'
         }));
         
-        // Change URL without page reload
         window.history.pushState({}, '', `/sayit/${currentChatId}`);
-        
-        // Now send the message to the chat
-        const data = await sendMessage(currentChatId, currentMessage, token);
-        
-        // Process messages and update title if needed
-        const { userMessage, aiMessage } = processMessages(data);
-        
-        // Replace the temporary message with the actual one and add AI response
-        setMessages([userMessage, aiMessage]);
-        
-        // Navigate to the new chat page
         router.replace(`/sayit/${currentChatId}`);
-      } else {
-        // Create a temporary user message for existing chat
-        const tempUserMessage: Message = {
-          id: 'temp-id-' + Date.now(),
-          chatId: currentChatId,
-          type: 'user',
-          content: currentMessage,
-          createdAt: new Date().toISOString(),
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        
-        // Add temporary user message to UI immediately
-        setMessages(prev => [...prev, tempUserMessage]);
-        
-        // Set loading state
-        setIsLoading(true);
-        
-        // Send the message to the existing chat
-        const data = await sendMessage(currentChatId, currentMessage, token);
-        
-        // Process messages and update title if needed
-        const { userMessage, aiMessage } = processMessages(data);
-        
-        // Replace the temporary message with the actual one and add AI response
-        setMessages(prev => 
-          prev.map(msg => msg.id === tempUserMessage.id ? userMessage : msg).concat(aiMessage)
-        );
       }
+
+      // Send the message to the chat (new or existing)
+      const data = await sendMessage(currentChatId, currentMessage, token);
+      
+      // --- INTEGRASI ZUSTAND ---
+      // Setelah mendapatkan respons dari API, update saldo token di store global.
+      // API `sendMessage` kita sudah didesain untuk mengembalikan `newTokenBalance`.
+      if (data.newTokenBalance !== undefined) {
+        setTokenBalance(data.newTokenBalance);
+      }
+      
+      const { userMessage, aiMessage } = processMessages(data);
+      
+      // Replace temporary message with actual one and add AI response
+      setMessages(prev => 
+        prev.map(msg => msg.id === tempUserMessage.id ? userMessage : msg).concat(aiMessage)
+      );
+      
     } catch (error) {
       console.error('Error sending message:', error);
-      // Keep the temporary message but add an error indicator if needed
     } finally {
       setIsLoading(false);
     }
@@ -276,15 +253,16 @@ export default function ChatPage() {
     return null;
   }
 
+  // --- JSX (tidak ada perubahan di sini) ---
   return (
     <div className="flex flex-col h-[calc(100vh-var(--header-height)-18px)]">
       <Header>
+        {/* ... (kode header Anda) */}
         <div className="w-full flex items-center justify-between">
           <div className="flex items-center">
             <Link href="/sayit" className="mr-3 flex items-center justify-center w-8 h-8 rounded-full hover:bg-zinc-100 text-zinc-700">
               <IconArrowLeft className="w-5 h-5" />
             </Link>
-            
             <div className="flex items-center">
               <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-white mr-2">
                 <IconRobot className="w-4 h-4" />
@@ -295,7 +273,6 @@ export default function ChatPage() {
               </div>
             </div>
           </div>
-          
           <div className="flex items-center space-x-1">
             {!isNewChat && (
               <button 
@@ -308,38 +285,32 @@ export default function ChatPage() {
             {!isNewChat && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-full text-zinc-500 hover:text-zinc-900">
-                  <IconDotsVertical className="w-5 h-5" />
-                  
-                </button>
+                  <button className="p-2 rounded-full text-zinc-500 hover:text-zinc-900">
+                    <IconDotsVertical className="w-5 h-5" />
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem>
-                  <ConfirmationDialog
-                    trigger={
-                      <button 
-                        type="button"
-                        className="text-red-500 transition-colors flex gap-2 items-center justify-center"
-                      >
-                        <IconTrash className="w-4 h-4 text-red-500" />
-                        Delete
-                      </button>
-                    }
-                    title="Delete Chat"
-                    description={`Are you sure you want to delete "${chatInfo.title}"? This action cannot be undone.`}
-                    confirmText="Delete"
-                    confirmVariant="destructive"
-                    onConfirm={async () => {
-                      const token = await getToken();
-                      if (token) {
-                        handleDeleteChat(chatId);
+                    <ConfirmationDialog
+                      trigger={
+                        <button 
+                          type="button"
+                          className="text-red-500 transition-colors flex gap-2 items-center justify-center w-full"
+                        >
+                          <IconTrash className="w-4 h-4 text-red-500" />
+                          Delete
+                        </button>
                       }
-                    }}
-                  />
+                      title="Delete Chat"
+                      description={`Are you sure you want to delete "${chatInfo.title}"? This action cannot be undone.`}
+                      confirmText="Delete"
+                      confirmVariant="destructive"
+                      onConfirm={() => handleDeleteChat(chatId)}
+                    />
                   </DropdownMenuItem>
-                  <DropdownMenuItem className={`p-2 group hover:none ${chatInfo.starred ? 'text-amber-500' : 'text-zinc-500'} md:hidden`}
-                        onClick={handleToggleStar}>
-                    <IconStar className={`w-5 h-5 ${chatInfo.starred ? 'text-amber-500' : 'text-zinc-500'}`} />
+                  <DropdownMenuItem className="p-2 group hover:none md:hidden"
+                    onClick={handleToggleStar}>
+                    <IconStar className={`w-5 h-5 mr-2 ${chatInfo.starred ? 'text-amber-500' : 'text-zinc-500'}`} />
                     {chatInfo.starred ? 'Unstar' : 'Star'}
                   </DropdownMenuItem>
                 </DropdownMenuContent>

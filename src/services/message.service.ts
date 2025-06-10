@@ -32,8 +32,14 @@ export interface ChatResponse {
 export interface MessageResponse {
   userMessage: Message;
   aiMessage: Message;
-  chatUpdated?: boolean;
-  newTitle?: string;
+  newTokenBalance: number; // <-- Tambahkan properti ini
+  costDetails: {
+    inputTokens: number;
+    outputTokens: number;
+    totalCost: number;
+  };
+  chatUpdated?: boolean; // Opsional
+  newTitle?: string;     // Opsional
 }
 
 export const fetchChatDetails = async (chatId: string, token: string): Promise<ChatResponse> => {
